@@ -1,0 +1,1 @@
+Instead of following the guide in guide.txt just export the jar and add all the dependencies in XatzClient.json

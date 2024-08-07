@@ -1,0 +1,81 @@
+package me.xatzdevelopments.xatz.client.modules;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.lwjgl.input.Keyboard;
+import org.lwjgl.opengl.GL11;
+
+import me.xatzdevelopments.xatz.client.events.Event;
+import me.xatzdevelopments.xatz.client.events.UpdateEvent;
+import me.xatzdevelopments.xatz.client.module.state.Category;
+import me.xatzdevelopments.xatz.module.Module;
+import net.minecraft.block.material.Material;
+import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.item.ItemStack;
+
+public class ArmorHUD extends Module {
+
+	public ArmorHUD() {
+		super("ArmorHUD", Keyboard.KEY_NONE, Category.RENDER, "Displays what armor you are wearing");
+	}
+
+	@Override
+	public void onDisable() {
+
+		super.onDisable();
+	}
+
+	@Override
+	public void onEnable() {
+
+		super.onEnable();
+	}
+
+	@Override
+	public void onUpdate(UpdateEvent event) {
+		final boolean currentItem = true;
+        GL11.glPushMatrix();
+        final List<ItemStack> stuff = new ArrayList<ItemStack>();
+        final boolean onwater = mc.thePlayer.isEntityAlive() && mc.thePlayer.isInsideOfMaterial(Material.water);
+        int split = -3;
+        for (int index = 3; index >= 0; --index) {
+            final ItemStack armer = mc.thePlayer.inventory.armorInventory[index];
+            if (armer != null) {
+                stuff.add(armer);
+            }
+        }
+        if (mc.thePlayer.getCurrentEquippedItem() != null && currentItem) {
+            stuff.add(mc.thePlayer.getCurrentEquippedItem());
+        }
+        for (final ItemStack errything : stuff) {
+            if (mc.theWorld != null) {
+                RenderHelper.enableGUIStandardItemLighting();
+                split += 16;
+            }
+            GlStateManager.pushMatrix();
+            GlStateManager.disableAlpha();
+            GlStateManager.clear(256);
+            GlStateManager.enableBlend();
+            mc.getRenderItem().zLevel = -150.0f;
+            mc.getRenderItem().renderItemAndEffectIntoGUI(errything, split + ScaledResolution.getScaledWidth() / 2 - 4, ScaledResolution.getScaledHeight() - (onwater ? 65 : 55));
+            mc.getRenderItem().renderItemOverlays(mc.fontRendererObj, errything, split + ScaledResolution.getScaledWidth() / 2 - 4, ScaledResolution.getScaledHeight() - (onwater ? 65 : 55));
+            mc.getRenderItem().zLevel = 0.0f;
+            GlStateManager.disableBlend();
+            GlStateManager.scale(0.5, 0.5, 0.5);
+            GlStateManager.disableDepth();
+            GlStateManager.disableLighting();
+            GlStateManager.enableDepth();
+            GlStateManager.scale(2.0f, 2.0f, 2.0f);
+            GlStateManager.enableAlpha();
+            GlStateManager.popMatrix();
+            errything.getEnchantmentTagList();
+        }
+        GL11.glPopMatrix();
+    
+		super.onUpdate();
+	}
+
+}

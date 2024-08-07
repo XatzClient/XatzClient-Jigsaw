@@ -1,0 +1,50 @@
+
+package me.xatzdevelopments.xatz.alts;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+
+import com.google.gson.JsonObject;
+
+import me.xatzdevelopments.xatz.client.alts.Alt;
+import me.xatzdevelopments.xatz.client.main.Xatz;
+
+
+public class AltManager {
+    public static Alt lastAlt;
+    public static ArrayList<Alt> registry;
+
+    static {
+        registry = new ArrayList();
+    }
+
+    public ArrayList<Alt> getRegistry() {
+        return registry;
+    }
+
+    public void setLastAlt(Alt alt2) {
+        lastAlt = alt2;
+    }
+    
+    public void saveAlts() {
+		System.out.println("Saving alts...");
+		JsonObject json = new JsonObject();
+		int i = 0;
+		for (Alt alts : alt) {
+			JsonObject altJson = new JsonObject();
+			altJson = alt.saveToJson(altJson);
+			json.add(String.valueOf(i), altJson);
+			i++;
+		}
+		try {
+			FileWriter fw = new FileWriter(Xatz.getFileMananger().altsDir);
+			fw.write(json.toString());
+			fw.close();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+}
+

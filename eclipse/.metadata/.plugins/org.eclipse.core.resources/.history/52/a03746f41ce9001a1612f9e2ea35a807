@@ -1,0 +1,16 @@
+package me.xatzdevelopments.xatz.client.modules;
+
+import me.xatzdevelopments.xatz.client.module.state.Category;
+import me.xatzdevelopments.xatz.module.Module;
+
+public class Animations extends Module {
+
+	public Animations() {
+		super("Animations", 0, Category.FUN, "Changes some animations.");
+	}
+
+	public void onToggle() {
+
+		super.onToggle();
+	}
+}

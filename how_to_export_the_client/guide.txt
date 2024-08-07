@@ -1,0 +1,7 @@
+1.In eclipse go to File>Export. Then choose Java>Jar file. From there choose the src folder, save the file to an easy to find location and click finish.
+2.Open the jar file with WinRar or 7zip (depending on what you have installed)
+3.Copy the folders above inside the jar file(winrar will take care of not replacing the folders already there but just add shit
+4.Delete the META-INF(seriously dont leave it there)
+5.Make a new folder in the .miencraft/versions directory if you dont have a folder for the client
+6.Copy the jar file and the json provided in this folder(make sure that 1.the folder name, 2.the jar file name, 3.the json file name and 4.the id mentioned inside the json file are the same)
+7.That's it

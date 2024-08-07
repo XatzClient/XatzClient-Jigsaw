@@ -1,0 +1,157 @@
+package me.xatzdevelopments.xatz.client.modules;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.lwjgl.input.Keyboard;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.util.Color;
+
+import me.xatzdevelopments.xatz.client.BlockData;
+import me.xatzdevelopments.xatz.client.SigmaTimer;
+import me.xatzdevelopments.xatz.client.events.UpdateEvent;
+import me.xatzdevelopments.xatz.client.main.Xatz;
+import me.xatzdevelopments.xatz.client.module.state.Category;
+import me.xatzdevelopments.xatz.client.settings.ClientSettings;
+import me.xatzdevelopments.xatz.gui.custom.clickgui.ModSetting;
+import me.xatzdevelopments.xatz.gui.custom.clickgui.SliderSetting;
+import me.xatzdevelopments.xatz.gui.custom.clickgui.ValueFormat;
+import me.xatzdevelopments.xatz.module.Module;
+import net.minecraft.client.multiplayer.ServerAddress;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.WorldRenderer;
+import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.util.Vec3;
+import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
+import net.minecraft.util.MathHelper;
+
+public class AutoClutch extends Module {
+    
+	    private int distanceToTheGround = 5;
+	    private SigmaTimer timer = new SigmaTimer();
+	    private BlockData blockBelowData;
+	    private BlockPos lastBlockPos;
+	    private double fallStartY = 0;
+
+    public AutoClutch() {
+        super("AutoClutch", Keyboard.KEY_NONE, Category.PLAYER, "test");
+    }
+
+    @Override
+    public void onDisable() {
+        
+        super.onDisable();
+    }
+
+    @Override
+    public void onEnable() {
+        
+        super.onEnable();
+    }
+
+    @Override
+    public void onUpdate(UpdateEvent event) {
+    	 
+              if (!mc.thePlayer.onGround
+                     
+                      && mc.thePlayer.motionY > 0
+                      && mc.gameSettings.keyBindJump.pressed
+                      && lastBlockPos != null
+                      && lastBlockPos.getX() == Math.floor(mc.thePlayer.posX)
+                      && lastBlockPos.getZ() == Math.floor(mc.thePlayer.posZ)) {
+                  BlockPos blockBelow = new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY - 1, mc.thePlayer.posZ);
+                  IBlockState blockState = mc.theWorld.getBlockState(blockBelow);
+                  if (blockState.getBlock() == Blocks.air && timer.delay(100)) {
+                      blockBelowData = getBlockData(blockBelow);
+                      if (blockBelowData != null) {
+                          //Face in the center of the block
+                          float[] rotations = MoveUtils.getRotationsBlock(blockBelowData.position, blockBelowData.face);
+                          eu.setYaw(rotations[0]);
+                          eu.setPitch(rotations[1]);
+                      }
+                  }
+              } else if (!mc.thePlayer.onGround && mc.thePlayer.motionY < 0) {
+                  if (fallStartY < mc.thePlayer.posY) {
+                      fallStartY = mc.thePlayer.posY;
+                  }
+                  if (fallStartY - mc.thePlayer.posY > 2) {
+                      if (eu.isPre()) {
+                          //Get block based off of movement
+                          double x = mc.thePlayer.posX;
+                          double y = mc.thePlayer.posY - 1.5;
+                          double z = mc.thePlayer.posZ;
+
+                          //Checks if the block below is a valid block + timer delay
+                          BlockPos blockBelow = new BlockPos(x, y, z);
+                          IBlockState blockState = mc.theWorld.getBlockState(blockBelow);
+
+                          IBlockState underBlockState = mc.theWorld.getBlockState(new BlockPos(x, y - 1, z));
+
+                          if (!underBlockState.getBlock().isSolidFullCube() && !mc.thePlayer.isSneaking() && (blockState.getBlock() == Blocks.air ||
+                                  blockState.getBlock() == Blocks.snow_layer ||
+                                  blockState.getBlock() == Blocks.tallgrass) && timer.delay(100)) {
+                              timer.reset();
+                              //Grab the block data for the block below
+                              lastBlockPos = blockBelow;
+                              blockBelowData = getBlockData(blockBelow);
+                              if (blockBelowData != null) {
+                                  //Face in the center of the block
+                                  float[] rotations = MoveUtils.getRotationsBlock(blockBelowData.position, blockBelowData.face);
+                                  eu.setYaw(rotations[0]);
+                                  eu.setPitch(rotations[1]);
+                              }
+                          }
+                      }
+                  } else {
+                      blockBelowData = null;
+                  }
+              } else if (eu.isPre()) {
+                  fallStartY = 0;
+                  blockBelowData = null;
+              }
+
+              if (eu.isPost() && blockBelowData != null) {
+                  for (int i = 36; i < 45; i++) {
+                      if (mc.thePlayer.inventoryContainer.getSlot(i).getHasStack()) {
+                          ItemStack is = mc.thePlayer.inventoryContainer.getSlot(i).getStack();
+                          Item item = is.getItem();
+                          if (item instanceof ItemBlock && !BlockUtils.getBlacklistedBlocks().contains(((ItemBlock) item).getBlock()) && !((ItemBlock) item).getBlock().getLocalizedName().toLowerCase().contains("chest")) {
+                              mc.rightClickDelayTimer = 2;
+                              int currentItem = mc.thePlayer.inventory.currentItem;
+
+                              //Swap to block.
+                              mc.thePlayer.sendQueue.addToSendQueue(new C09PacketHeldItemChange(i - 36));
+                              mc.thePlayer.inventory.currentItem = i - 36;
+                              mc.playerController.updateController();
+
+                              //Caused a null pointer for some reason, will look into soon.
+                              try {
+                                  if (mc.playerController.func_178890_a(mc.thePlayer, mc.theWorld, mc.thePlayer.inventory.getCurrentItem(), blockBelowData.position, blockBelowData.face, new Vec3(blockBelowData.position.getX(), blockBelowData.position.getY(), blockBelowData.position.getZ()))) {
+                                      mc.thePlayer.swingItem();
+                                  }
+                              } catch (Exception ignored) {
+
+                              }
+                              blockBelowData = null;
+
+                              //Reset to current hand.
+                              mc.thePlayer.inventory.currentItem = currentItem;
+                              mc.playerController.updateController();
+                              return;
+                          }
+                      }
+                  }
+              }
+          }
+        super.onUpdate();
+    }
+    
+    
+}
